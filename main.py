@@ -9,6 +9,8 @@ from lxml import etree
 from absl import app, flags, logging
 from datetime import datetime, date
 from time import time
+from GetLoginData import get_jsl_data
+import base64
 
 FLAGS = flags.FLAGS
 
@@ -94,21 +96,31 @@ def get_dat(t):
     else:
         # 排除未上市的
         payload = {'listed': 'Y'}
+        # 添加认证cookie信息
+        """
+        f=open(r'cookies.txt','r')
+        login_cookies = requests.cookies.RequestsCookieJar()
+        for line in f.read().split(';'):   #按照字符：进行划分读取
+            #其设置为1就会把字符串拆分成2份
+            name,value=line.strip().split('=',1)
+            #为字典cookies添加内容
+            login_cookies.set(name, value, domain='www.jisilu.cn', path='/')  
+        #print("login_cookies", login_cookies)
         newUrl = 'https://www.jisilu.cn/data/cbnew/cb_list/?___jsl=LST___t=%s' % int(
             t * 1000)
         logging.info(newUrl)
         # 最简单的爬虫请求.也可以加上headers字段，防止部分网址的反爬虫机制
-        #  headers = {
-        #  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36',
-        #  }
-        response = requests.post(newUrl, data=payload)
+        response = requests.post(newUrl, data=payload, cookies=login_cookies)
+        #response = requests.get(newUrl, cookies=login_cookies)
         # 当爬取的界面需要用户名密码登录时候，构建的请求需要包含auth字段
         data = response.content.decode('utf-8')
+        """
+        data = get_jsl_data()
         if FLAGS.save_json:
             jf = open(FLAGS.save_json, 'w', encoding='utf-8')
             jf.write(data)
             jf.close()
-        return json.loads(data)
+        return data
 
 
 # 排除已经公布强赎，破净的，仅机构可买的，可交换债
